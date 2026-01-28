@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Yard Management - Terminal Operations</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background: #cbd5e1; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .java-card { background: white; border-radius: 4px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); border: 1px solid #475569; margin-bottom: 2rem; overflow: hidden; }
+        .java-header { background: #ffc000; color: #000; padding: 12px 24px; font-weight: 900; border-bottom: 3px solid #000; display: flex; justify-content: space-between; align-items: center; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #ffc000; color: #000; font-weight: 800; border: 1px solid #000; padding: 6px; font-size: 0.75rem; text-transform: uppercase; }
+        td { border: 1px solid #000; padding: 4px; font-size: 0.85rem; font-weight: 700; text-align: center; }
+        
+        .input-occ { background: #166534; color: #fff; border-radius: 2px; width: 65px; text-align: center; font-weight: 900; border: 1px solid #052e16; }
+        .input-occ:focus { background: #15803d; outline: 2px solid #ffc000; transform: scale(1.05); }
+        
+        .comm-select { background: #f8fafc; border: 1px solid #94a3b8; font-size: 0.75rem; width: 100%; padding: 2px; font-weight: 600; cursor: pointer; }
+        
+        .balance-cell { background: #e2e8f0; color: #1e293b; font-weight: 900; }
+        
+        .summary-row { display: flex; justify-content: flex-end; margin-top: 10px; gap: 4px; }
+        .summary-item { border: 1px solid #000; font-weight: 900; display: flex; }
+        .summary-label { background: #ffc000; padding: 6px 12px; font-size: 0.75rem; min-width: 180px; text-align: right; }
+        .summary-val { background: #fff; padding: 6px 12px; min-width: 100px; text-align: center; }
+        .bg-used { background: #166534 !important; color: #fff; }
+        .bg-avail { background: #000 !important; color: #fff; }
+
+        .chart-box { background: #fff; border: 1px solid #000; padding: 15px; height: 400px; }
+    </style>
+</head>
+<body class="p-6">
+
+    <div class="max-w-[1700px] mx-auto">
+        
+        <div class="java-card">
+            <div class="java-header">
+                <span>CAR YARD CAPACITY / UTILIZATION</span>
+                <span class="text-xs bg-black text-white px-2 py-1 rounded">UNITS</span>
+            </div>
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 p-6">
+                <div>
+                    <table>
+                        <thead>
+                            <tr><th>Location</th><th>Total Area</th><th>Void Space</th><th>Area Usable</th><th>SQ/car</th><th>Capacity</th><th>Occupied</th><th>Balance</th></tr>
+                        </thead>
+                        <tbody id="carTable">
+                            <tr><td>GC1</td><td>25000</td><td>5000</td><td>20000</td><td>10</td><td class="cap-cell">2000</td><td><input type="number" value="497" class="input-occ" oninput="updateCar()"></td><td class="balance-cell">1503</td></tr>
+                            <tr><td>GC2</td><td>28000</td><td>5600</td><td>22400</td><td>10</td><td class="cap-cell">2240</td><td><input type="number" value="1336" class="input-occ" oninput="updateCar()"></td><td class="balance-cell">904</td></tr>
+                            <tr><td>GC3</td><td>7500</td><td>1500</td><td>6000</td><td>10</td><td class="cap-cell">600</td><td><input type="number" value="0" class="input-occ" oninput="updateCar()"></td><td class="balance-cell">600</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="summary-row"><div class="summary-item"><div class="summary-label">Capacity for RORO</div><div id="roroTotal" class="summary-val">4840</div></div></div>
+                    <div class="summary-row"><div class="summary-item"><div class="summary-label">Capacity Utilized</div><div id="roroUsed" class="summary-val bg-used">1833</div></div></div>
+                    <div class="summary-row"><div class="summary-item"><div class="summary-label">Capacity Available</div><div id="roroAvail" class="summary-val bg-avail">3007</div></div></div>
+                </div>
+                <div class="chart-box">
+                    <canvas id="carHistogram"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="java-card">
+            <div class="java-header">
+                <span>GENERAL CARGO YARD CAPACITY / UTILIZATION</span>
+                <span class="text-xs bg-black text-white px-2 py-1 rounded">SQM</span>
+            </div>
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 p-6">
+                <div>
+                    <div class="overflow-y-auto max-h-[500px]">
+                        <table>
+                            <thead class="sticky top-0 z-10">
+                                <tr><th>Location</th><th>Area Usable</th><th>Capacity</th><th>Occupied</th><th>Balance</th><th>Commodity</th></tr>
+                            </thead>
+                            <tbody id="cargoTable"></tbody>
+                        </table>
+                    </div>
+                    <div class="summary-row"><div class="summary-item"><div class="summary-label">Capacity for GC (SQM)</div><div class="summary-val">29600</div></div></div>
+                    <div class="summary-row"><div class="summary-item"><div class="summary-label">Capacity Used (SQM)</div><div id="gcUsed" class="summary-val bg-used">10360</div></div></div>
+                    <div class="summary-row"><div class="summary-item"><div class="summary-label">Capacity Available (SQM)</div><div id="gcAvail" class="summary-val bg-avail">19240</div></div></div>
+                </div>
+                <div class="chart-box">
+                    <canvas id="cargoHistogram"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const commodities = [
+            "LIVESTOCK", "STEEL PIPE", "RORO - IMPORT", "PASSENGERS", "PACKAGES - RORO", 
+            "RORO - EXPORT", "LAY BY", "PACKAGES - GENERAL CARGO", "MAFI", "NAVAL CREW", 
+            "TIMBER", "IRON ORE CAKE", "SULPHUR", "OVER DIMENSION - GENERAL CARGO", 
+            "STEEL BILLET", "SUGAR", "ALUMINIUM", "PORT CLEARANCE", "STEEL PLATE", 
+            "PACKAGES - TRANSHIPMENT", "HOLD INSPECTION", "TOWING", "CREW CHANGE", 
+            "PACKAGES - RORO TRANSHIPMENT", "RORO - TRANSHIPMENT", "AQIS - Australian Quarentine"
+        ];
+
+        const cargoLocations = [
+            {id:'6B', area:2000, cap:111, occ:2000, comm:'ALUMINIUM'},
+            {id:'6C', area:2000, cap:111, occ:2000, comm:''},
+            {id:'6D', area:2000, cap:111, occ:2000, comm:''},
+            {id:'6E', area:2000, cap:111, occ:2000, comm:''},
+            {id:'7A', area:2160, cap:120, occ:2160, comm:'STEEL BILLET'},
+            {id:'7B', area:2160, cap:120, occ:200, comm:'ALUMINIUM'},
+            {id:'7C', area:2160, cap:120, occ:0, comm:''},
+            {id:'7D', area:2160, cap:120, occ:0, comm:''},
+            {id:'7E', area:2160, cap:120, occ:0, comm:''},
+            {id:'8A', area:2160, cap:120, occ:0, comm:''},
+            {id:'8B', area:2160, cap:120, occ:0, comm:''},
+            {id:'8C', area:2160, cap:120, occ:0, comm:''},
+            {id:'8D', area:2160, cap:120, occ:0, comm:''},
+            {id:'8E', area:2160, cap:120, occ:0, comm:''}
+        ];
+
+        let carChart, cargoChart;
+
+        function init() {
+            const cargoBody = document.getElementById('cargoTable');
+            cargoLocations.forEach(d => {
+                const tr = document.createElement('tr');
+                const options = commodities.map(c => `<option value="${c}" ${c === d.comm ? 'selected' : ''}>${c}</option>`).join('');
+                tr.innerHTML = `
+                    <td>${d.id}</td><td class="area-val">${d.area}</td><td>${d.cap}</td>
+                    <td><input type="number" value="${d.occ}" class="input-occ" oninput="updateCargo()"></td>
+                    <td class="balance-cell">${d.area - d.occ}</td>
+                    <td><select class="comm-select"><option value="">- SELECT -</option>${options}</select></td>
+                `;
+                cargoBody.appendChild(tr);
+            });
+
+            const chartBase = { 
+                responsive: true, maintainAspectRatio: false, 
+                scales: { y: { beginAtZero: true }, x: { ticks: { font: { weight: 'bold' } } } } 
+            };
+
+            carChart = new Chart(document.getElementById('carHistogram'), {
+                type: 'bar',
+                data: { labels: ['GC1', 'GC2', 'GC3'], datasets: [
+                    { label: 'Max Capacity', data: [2000, 2240, 600], backgroundColor: '#1e293b' },
+                    { label: 'Occupied', data: [497, 1336, 0], backgroundColor: '#f59e0b' }
+                ]},
+                options: chartBase
+            });
+
+            cargoChart = new Chart(document.getElementById('cargoHistogram'), {
+                type: 'bar',
+                data: { labels: cargoLocations.map(i => i.id), datasets: [
+                    { label: 'Area Usable (SQM)', data: cargoLocations.map(i => i.area), backgroundColor: '#1e293b' },
+                    { label: 'Occupied (SQM)', data: cargoLocations.map(i => i.occ), backgroundColor: '#f59e0b' }
+                ]},
+                options: chartBase
+            });
+            updateCar(); updateCargo();
+        }
+
+        function updateCar() {
+            let totalCap = 0, totalOcc = 0; const occData = [];
+            document.querySelectorAll('#carTable tr').forEach(row => {
+                const cap = parseInt(row.querySelector('.cap-cell').innerText);
+                const occ = parseInt(row.querySelector('input').value) || 0;
+                row.querySelector('.balance-cell').innerText = cap - occ;
+                totalCap += cap; totalOcc += occ; occData.push(occ);
+            });
+            document.getElementById('roroUsed').innerText = totalOcc;
+            document.getElementById('roroAvail').innerText = totalCap - totalOcc;
+            carChart.data.datasets[1].data = occData; carChart.update();
+        }
+
+        function updateCargo() {
+            let totalOcc = 0; const occData = [];
+            document.querySelectorAll('#cargoTable tr').forEach(row => {
+                const area = parseInt(row.querySelector('.area-val').innerText);
+                const occ = parseInt(row.querySelector('input').value) || 0;
+                row.querySelector('.balance-cell').innerText = area - occ;
+                totalOcc += occ; occData.push(occ);
+            });
+            document.getElementById('gcUsed').innerText = totalOcc;
+            document.getElementById('gcAvail').innerText = 29600 - totalOcc;
+            cargoChart.data.datasets[1].data = occData; cargoChart.update();
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
